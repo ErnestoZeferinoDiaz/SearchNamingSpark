@@ -7,7 +7,7 @@ import org.apache.spark.sql.functions.{col, udf}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 
-class SearchNaming(sc: SparkContext, spark: SparkSession, df: DataFrame){
+class SearchNaming(res:Resource){
   private var words:List[List[String]] = List[List[String]]()
 
   def words(palabras: String): SearchNaming ={
@@ -44,13 +44,20 @@ class SearchNaming(sc: SparkContext, spark: SparkSession, df: DataFrame){
   }
 
   def search(): Dataset[Row] ={
-    import spark.sqlContext.implicits._
-    //words = words.transpose
+    import this.res.spark.sqlContext.implicits._
+
+    val df = res.spark.read.parquet(res.pathNamings2).select(
+      col("field_code_id"),
+      col("mexico_mark_of_use"),
+      col("type_naming"),
+      col("global_naming_field"),
+      col("logical_name_of_the_field_spa"),
+      col("field_description_spa")
+    )
     val dfC = df.collect().map(x => {
       x.toSeq.toList.map(y => y.toString)
     }).toList
 
-    val headers = df.columns.toList
     val resp = dfC.filter(row => {
       row.map(prayer => {
         val r = isAllWordInPrayer(prayer)
@@ -59,8 +66,8 @@ class SearchNaming(sc: SparkContext, spark: SparkSession, df: DataFrame){
     }).map(x => {
       Row.fromSeq(x)
     })
-    val rdd = sc.parallelize(resp)
+    val rdd = this.res.sc.parallelize(resp)
     val schema = df.schema
-    spark.createDataFrame(rdd,schema)
+    this.res.spark.createDataFrame(rdd,schema)
   }
 }

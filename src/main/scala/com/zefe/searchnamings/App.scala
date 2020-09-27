@@ -1,7 +1,10 @@
 package com.zefe.searchnamings
 
+import java.io.{BufferedWriter, FileWriter}
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{DataType, StringType, StructType}
 import org.apache.spark.{SPARK_BRANCH, SparkConf, SparkContext}
 
 
@@ -13,32 +16,33 @@ object App {
 
 
   def main(args : Array[String]): Unit = {
-    val conf = new SparkConf().setAppName("hola").setMaster("local[2]")
-    val sc = new SparkContext(conf)
-    val spark = SparkSession.builder
-      .config(conf = conf)
-      .appName("spark session example")
-      .getOrCreate()
-    import spark.sqlContext.implicits._
+    val res = new Resource()
 
-    //val csv = new PreProcessingCSV("src/main/resources/namings.csv").load()
-    val df = new PreProcessingDF(spark,"src/main/resources/namings_2.csv").load()
+    //procesingExcel(res)
 
-    /*
     val searchNaming = new SearchNaming(
-      sc,spark,df
+      res
     )
-      .words("saldo")
-      .words("retenido")
+      .words("fecha")
+      .words("alta")
 
     .search.orderBy(
-      col("MEXICO - MARK OF USE").desc,
-      col("Type Naming").asc,
-      length(col("LOGICAL NAME OF THE FIELD (SPA)")).asc,
-      col("GLOBAL NAMING FIELD").asc
-    ).show(500,false)
+      col("mexico_mark_of_use").desc,
+      col("type_naming").asc,
+      length(col("logical_name_of_the_field_spa")).asc,
+      col("global_naming_field").asc
+    ).show(100,false)
 
-     */
+  }
+
+  def procesingExcel(res: Resource): Unit ={
+    val csv = new PreProcessingCSV(res).load()
+    val df = new PreProcessingDF(res,csv).load()
+    df.write.partitionBy(
+      "mexico_mark_of_use"
+    ).mode(
+      SaveMode.Overwrite
+    ).parquet(res.pathNamings2)
   }
 
 }

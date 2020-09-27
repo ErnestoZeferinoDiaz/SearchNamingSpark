@@ -1,29 +1,33 @@
 package com.zefe.searchnamings
 
-import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.{col, udf}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.apache.spark.sql.functions.{col, udf, length}
+import org.apache.spark.sql.types.{DataType, StructType}
 
-class PreProcessingDF(spark: SparkSession, path: String) {
+class PreProcessingDF(res:Resource, csv: List[List[String]]) {
 
   def load(): DataFrame ={
-    val df = spark.read
-      .option("delimiter", "~")
-      .option("header",true)
-      .csv(path)
+    val schemaSource = scala.io.Source.fromFile(res.pathSchemaAll).getLines.mkString
+    val schemaFromJson = DataType.fromJson(schemaSource).asInstanceOf[StructType]
+
+    val data = this.csv.slice(1,this.csv.length).map(Row.fromSeq(_))
+    val df = res.spark.createDataFrame(res.sc.parallelize(data),schemaFromJson)
 
     val extractType: String => String = _.split("_").toList.last
     val extractTypeUDF = udf(extractType)
 
-    df.select(
-      col("FIELD CODE ID"),
-      col("MEXICO - MARK OF USE"),
+    val dfMin = df.select(
+      col("field_code_id"),
+      col("mexico_mark_of_use"),
       extractTypeUDF(
-        col("GLOBAL NAMING FIELD")
-      ).as("Type Naming"),
-      col("GLOBAL NAMING FIELD"),
-      col("LOGICAL NAME OF THE FIELD (SPA)"),
-      col("FIELD DESCRIPTION (SPA)")
+        col("global_naming_field")
+      ).as("type_naming"),
+      col("global_naming_field"),
+      col("logical_name_of_the_field_spa"),
+      col("field_description_spa")
     )
+
+    dfMin
   }
 
 }
