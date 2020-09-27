@@ -21,9 +21,10 @@ object App {
       .getOrCreate()
     import spark.sqlContext.implicits._
 
-    val csv = new PreProcessingCSV("src/main/resources/namings.csv").load()
+    //val csv = new PreProcessingCSV("src/main/resources/namings.csv").load()
     val df = new PreProcessingDF(spark,"src/main/resources/namings_2.csv").load()
 
+    /*
     val searchNaming = new SearchNaming(
       sc,spark,df
     )
@@ -37,12 +38,7 @@ object App {
       col("GLOBAL NAMING FIELD").asc
     ).show(500,false)
 
-
-
-
-
-
-
+     */
   }
 
 }
