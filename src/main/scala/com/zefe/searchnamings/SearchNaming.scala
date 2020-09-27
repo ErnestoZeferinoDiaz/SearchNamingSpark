@@ -3,9 +3,9 @@ package com.zefe.searchnamings
 import java.text.Normalizer
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.functions.{col, udf}
+import org.apache.spark.sql.functions.{col, lower, udf, upper}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
 
 class SearchNaming(res:Resource){
   private var words:List[List[String]] = List[List[String]]()
@@ -15,37 +15,35 @@ class SearchNaming(res:Resource){
     this
   }
 
+
+
   def cleanString(palabra: String): String ={
     val cadena: String = palabra.trim
     val cadenaNormalize: String = Normalizer.normalize(cadena, Normalizer.Form.NFD)
     cadenaNormalize.replaceAll("[^\\p{ASCII}]", "")
   }
 
-  def isWordInPrayer(word: String, prayer: String): Boolean ={
-    prayer.split("[\\s\\n\\t]+").toList.map( x => {
-      cleanString(x).toLowerCase
-    }).map(x => {
-      val r = x.matches("(?i)("+word+").{0,4}$")
-      r
-    }).reduce(_|_)
-
+  def isSomeWordsInColumn(words:List[String], colName: String): Column ={
+    lower(
+      col(colName)
+    ).rlike(
+      words.map(_.toLowerCase).mkString("|")
+    )
   }
 
-  def isSomeWordInPrayer(prayer: String, words: List[String]): Boolean ={
-    words.map( word => {
-      isWordInPrayer(word,prayer)
-    }).reduce(_|_)
-  }
-
-  def isAllWordInPrayer(prayer: String): Boolean ={
+  def isAllWordsInColumn(colName: String): Column ={
     this.words.map( word => {
-      isSomeWordInPrayer(prayer,word)
-    }).foldLeft(true)(_&_)
+      isSomeWordsInColumn(word,colName)
+    }).reduce(_&&_)
+  }
+
+  def isAllWordsInAllCols(cols: List[String]): Column ={
+    cols.map(column => {
+      isAllWordsInColumn(column)
+    }).reduce(_||_)
   }
 
   def search(): Dataset[Row] ={
-    import this.res.spark.sqlContext.implicits._
-
     val df = res.spark.read.parquet(res.pathNamings2).select(
       col("field_code_id"),
       col("mexico_mark_of_use"),
@@ -54,20 +52,12 @@ class SearchNaming(res:Resource){
       col("logical_name_of_the_field_spa"),
       col("field_description_spa")
     )
-    val dfC = df.collect().map(x => {
-      x.toSeq.toList.map(y => y.toString)
-    }).toList
+    val cols = df.columns.toList
+    val condition = isAllWordsInAllCols(cols)
 
-    val resp = dfC.filter(row => {
-      row.map(prayer => {
-        val r = isAllWordInPrayer(prayer)
-        r
-      }).fold(false)(_|_)
-    }).map(x => {
-      Row.fromSeq(x)
-    })
-    val rdd = this.res.sc.parallelize(resp)
-    val schema = df.schema
-    this.res.spark.createDataFrame(rdd,schema)
+    println(condition)
+    df.select("*").where(condition)
   }
+
+
 }

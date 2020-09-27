@@ -13,25 +13,23 @@ import org.apache.spark.{SPARK_BRANCH, SparkConf, SparkContext}
  */
 object App {
 
-
-
   def main(args : Array[String]): Unit = {
     val res = new Resource()
 
     //procesingExcel(res)
 
-    val searchNaming = new SearchNaming(
-      res
-    )
+
+
+    val searchNaming = new SearchNaming(res)
       .words("fecha")
       .words("alta")
-
     .search.orderBy(
       col("mexico_mark_of_use").desc,
       col("type_naming").asc,
       length(col("logical_name_of_the_field_spa")).asc,
       col("global_naming_field").asc
     ).show(100,false)
+
 
   }
 
