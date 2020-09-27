@@ -21,8 +21,8 @@ object App {
       .getOrCreate()
     import spark.sqlContext.implicits._
 
-    //val csv = new PreProcessingCSV("src/main/resources/DDNG-N-344.csv").load()
-    val df = new PreProcessingDF(spark,"src/main/resources/DDNG-N-344_2.csv").load()
+    val csv = new PreProcessingCSV("src/main/resources/namings.csv").load()
+    val df = new PreProcessingDF(spark,"src/main/resources/namings_2.csv").load()
 
     val searchNaming = new SearchNaming(
       sc,spark,df
