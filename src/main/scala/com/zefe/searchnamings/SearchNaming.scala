@@ -7,7 +7,7 @@ import org.apache.spark.sql.functions.{col, lower, udf, upper}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Dataset, Row, SparkSession}
 
-class SearchNaming(res:Resource){
+class SearchNaming(){
   private var words:List[List[String]] = List[List[String]]()
 
   def words(palabras: String): SearchNaming ={
@@ -44,7 +44,7 @@ class SearchNaming(res:Resource){
   }
 
   def search(): Dataset[Row] ={
-    val df = res.spark.read.parquet(res.pathNamings2).select(
+    val df = Resource.spark.read.parquet(Resource.pathNamingsOut).select(
       col("field_code_id"),
       col("mexico_mark_of_use"),
       col("type_naming"),
