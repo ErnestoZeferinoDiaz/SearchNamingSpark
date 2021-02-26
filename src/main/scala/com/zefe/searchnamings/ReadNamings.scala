@@ -1,6 +1,6 @@
 package com.zefe.searchnamings
 
-import org.apache.spark.sql.functions.{col, regexp_replace}
+import org.apache.spark.sql.functions.{col, regexp_replace, udf}
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.apache.spark.sql.types.{DataType, StructType}
 
@@ -13,20 +13,19 @@ class ReadNamings{
     if (!tmp){
       this.readXlsx()
       this.writeNamingParquet()
-    } else {
-      this.df = Resource.spark.read.parquet(
-        Resource.pathNamingsOut
-      )
     }
+
     this
   }
 
   def compact(): ReadNamings ={
+
     this.df = this.df.select(
       col("field_code_id"),
       col("mexico_mark_of_use"),
       col("peru_mark_of_use"),
       col("global_naming_field"),
+      col("suffix"),
       col("logical_name_of_the_field_spa"),
       col("field_description_spa")
     )
@@ -44,7 +43,7 @@ class ReadNamings{
   }
 
   private def readXlsx(): Unit ={
-    val schemaSource = scala.io.Source.fromFile(Resource.pathSchemaAll).getLines.mkString
+    val schemaSource = scala.io.Source.fromFile(Resource.pathSchema).getLines.mkString
     val schemaFromJson = DataType.fromJson(schemaSource).asInstanceOf[StructType]
 
     this.df = Resource.spark.read
@@ -67,6 +66,40 @@ class ReadNamings{
     })
 
     this.df = this.df.select(condition:_*)
+    val sufix = udf( (naming:String) => {
+      var suf = List(
+        "id" -> "id",
+        "type" -> "type",
+        "amount" -> "amount",
+        "number" -> "number",
+        "per" -> "per",
+        "date" -> "date",
+        "time_date" -> "time_date",
+        "hms_date" -> "hms_date",
+        "desc" -> "desc",
+        "name" -> "name"
+      ).toMap
+      var tmp = naming.split("_").toList
+      var list = tmp.slice(tmp.length-2,tmp.length)
+      var dos = list.mkString("_")
+      var uno = list.last
+      var resp = ""
+
+      if(suf.contains(dos)){
+        resp = suf(dos)
+      }else if(suf.contains(uno)){
+        resp = suf(uno)
+      }else{
+        resp = "other"
+      }
+      resp
+    })
+
+    this.df = this.df.withColumn(
+      "suffix",sufix(col("global_naming_field"))
+    ).select(
+      col("*")
+    )
   }
 }
 

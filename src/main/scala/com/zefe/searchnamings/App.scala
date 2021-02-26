@@ -1,5 +1,7 @@
 package com.zefe.searchnamings
 
+import org.apache.spark.sql.functions.col
+
 
 /**
  * @author ${user.name}
@@ -7,19 +9,27 @@ package com.zefe.searchnamings
 object App {
 
   def main(args : Array[String]): Unit = {
-
-    val rNDF = new ReadNamings
-    val df = rNDF.read.compact.getNamingsDF
-
     val stm = new SearchBuild()
 
-    stm.init(
-    ).andContaining(
+    stm.andContaining(
       "fecha","hora"
     ).andContaining(
       "operacion","movimiento","operativa"
-    ).result().show(1000,false)
+    ).andContaining(
+      "local"
+    ).andNotContaining(
+      "divisa","moneda"
+    ).andNotContaining(
+      "texto"
+    ).filterBySuffix(
+      SuffixNaming.ID
+    ).or(
 
+    ).andContaining(
+      "branch[0-9]*"
+    ).filterBySuffix(
+      SuffixNaming.DATE
+    ).show(100,false)
 
 
 

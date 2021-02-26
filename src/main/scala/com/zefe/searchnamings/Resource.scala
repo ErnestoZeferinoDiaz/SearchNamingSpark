@@ -4,7 +4,8 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 
 object Resource {
-  val pathSchemaAll = "src/main/resources/schemaAll.json"
+  val pathSchema = "src/main/resources/schemaTableNaming.json"
+  val pathSchemaWithSuffix = "src/main/resources/schemaTableNamingWithSuffix.json"
 
   val pathNamingsIn = "src/main/resources/DDNG-N-8634.xlsx"
   val pathNamingsOut = "src/main/resources/namings_2"
